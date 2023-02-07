@@ -5,8 +5,21 @@ namespace Battleships;
 public class Grid
 {
     private const byte Size = 10;
-    private readonly bool[,] _grid = new bool[Size, Size];
+    private readonly List<Cell> _cells = new(Size * Size);
     private readonly Random _random = new();
+
+    public Grid()
+    {
+        _cells.AddRange(
+            Enumerable.Range(0, 10)
+                .SelectMany(x => Enumerable.Range(0, 10)
+                    .Select(y => new Cell
+                    {
+                        Row = x,
+                        Column = y
+                    }))
+        );
+    }
 
     public override string ToString()
     {
@@ -20,15 +33,15 @@ public class Grid
         }
 
         sb.AppendLine();
-        
-        for (var i = 0; i < Size; i++)
+
+        foreach (var row in _cells.GroupBy(x => x.Row).OrderBy(x => x.Key))
         {
-            sb.Append(Convert.ToChar(Constants.CharACode + i));
+            sb.Append(Convert.ToChar(Constants.CharACode + row.Key));
             sb.Append(' ');
-            
-            for (var j = 0; j < Size; j++)
+
+            foreach (var cell in row.OrderBy(x => x.Column))
             {
-                sb.Append(_grid[i, j] ? 'x' : '.');
+                sb.Append(cell.HasShip ? 'x' : '.');
                 sb.Append(' ');
             }
 
@@ -42,54 +55,36 @@ public class Grid
     {
         while (true)
         {
-            var direction = (ShipDirection) _random.Next(0, Enum.GetNames(typeof(ShipDirection)).Length);
-            var isRow = direction.IsRow();
+            var isRow = _random.Next(0, 2) == 0; // otherwise column
 
             var startRow = _random.Next(0, isRow ? Size : Size - shipSize);
             var startColumn = _random.Next(0, isRow ? Size - shipSize : Size);
 
-            var hasCollision = false;
+            var shipCells = isRow
+                ? GetRowCells(startRow, startColumn, startColumn + shipSize)
+                : GetColumnCells(startColumn, startRow, startRow + shipSize);
 
-            if (isRow)
+            if (!shipCells.Any(x => x.HasShip))
             {
-                for (var i = 0; i < shipSize; i++)
+                foreach (var cell in shipCells)
                 {
-                    if (_grid[startRow, startColumn + i])
-                    {
-                        hasCollision = true;
-                    }
+                    cell.HasShip = true;
                 }
 
-                if (!hasCollision)
-                {
-                    for (var i = 0; i < shipSize; i++)
-                    {
-                        _grid[startRow, startColumn + i] = true;
-                    }
-
-                    break;
-                }
-            }
-            else
-            {
-                for (var i = 0; i < shipSize; i++)
-                {
-                    if (_grid[startRow + i, startColumn])
-                    {
-                        hasCollision = true;
-                    }
-                }
-
-                if (!hasCollision)
-                {
-                    for (var i = 0; i < shipSize; i++)
-                    {
-                        _grid[startRow + i, startColumn] = true;
-                    }
-
-                    break;
-                }
+                break;
             }
         }
     }
+
+    private Cell GetCell(int row, int column) => _cells.First(x => x.Row == row && x.Column == column);
+
+    private IList<Cell> GetRowCells(int row, int startIndex, int endIndex) => _cells
+        .Where(x => x.Row == row &&
+                    x.Column >= startIndex && x.Column < endIndex)
+        .ToList();
+
+    private IList<Cell> GetColumnCells(int column, int startIndex, int endIndex) => _cells
+        .Where(x => x.Column == column &&
+                    x.Row >= startIndex && x.Row < endIndex)
+        .ToList();
 }
