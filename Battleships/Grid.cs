@@ -56,8 +56,11 @@ public class Grid
         return sb.ToString();
     }
 
-    public void AddShip(int shipSize)
+    public void AddShip(ShipType shipType)
     {
+        var ship = new Ship { Type = shipType };
+        var shipSize = ship.Size;
+
         while (true)
         {
             var isRow = _random.Next(0, 2) == 0; // otherwise column
@@ -73,23 +76,52 @@ public class Grid
             {
                 foreach (var cell in shipCells)
                 {
-                    cell.HasShip = true;
+                    cell.Ship = ship;
                 }
+
+                ship.Cells = shipCells;
 
                 break;
             }
         }
     }
 
-    public bool Shoot(int row, int column)
+    public ShotResult Shoot(int row, int column)
     {
         var cell = GetCell(row, column);
+        if (cell.IsShot)
+        {
+            return ShotResult.CellIsAlreadyShot;
+        }
+
         cell.IsShot = true;
 
-        return cell.HasShip;
+        if (cell.HasShip)
+        {
+            if (cell.Ship!.Cells.All(x => x.IsShot))
+            {
+                return cell.Ship.Type switch
+                {
+                    ShipType.Destroyer => ShotResult.DestroyerSunk,
+                    ShipType.Battleship => ShotResult.BattleshipSunk,
+                    _ => throw new NotSupportedException(nameof(cell.Ship.Type))
+                };
+            }
+            else
+            {
+                return cell.Ship.Type switch
+                {
+                    ShipType.Destroyer => ShotResult.DestroyerHit,
+                    ShipType.Battleship => ShotResult.BattleshipHit,
+                    _ => throw new NotSupportedException(nameof(cell.Ship.Type))
+                };
+            }
+        }
+        
+        return ShotResult.Miss;
     }
 
-    public bool IsCleared() => _cells.Where(x => x.HasShip).All(x => x.IsShot);
+    public bool AreAllShipsDestroyed() => _cells.Where(x => x.HasShip).All(x => x.IsShot);
 
     private Cell GetCell(int row, int column) => _cells.First(x => x.Row == row && x.Column == column);
 
