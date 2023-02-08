@@ -5,14 +5,15 @@ namespace Battleships;
 public class Grid
 {
     private const byte Size = 10;
+
     private readonly List<Cell> _cells = new(Size * Size);
     private readonly Random _random = new();
 
     public Grid()
     {
         _cells.AddRange(
-            Enumerable.Range(0, 10)
-                .SelectMany(x => Enumerable.Range(0, 10)
+            Enumerable.Range(0, Size)
+                .SelectMany(x => Enumerable.Range(0, Size)
                     .Select(y => new Cell
                     {
                         Row = x,
@@ -41,7 +42,11 @@ public class Grid
 
             foreach (var cell in row.OrderBy(x => x.Column))
             {
-                sb.Append(cell.HasShip ? 'x' : '.');
+                sb.Append(
+                    cell.HasShip
+                        ? cell.IsShot ? 'x' : 'o'
+                        : cell.IsShot ? '_' : '.'
+                );
                 sb.Append(' ');
             }
 
@@ -61,8 +66,8 @@ public class Grid
             var startColumn = _random.Next(0, isRow ? Size - shipSize : Size);
 
             var shipCells = isRow
-                ? GetRowCells(startRow, startColumn, startColumn + shipSize)
-                : GetColumnCells(startColumn, startRow, startRow + shipSize);
+                ? GetRowShipCells(startRow, startColumn, startColumn + shipSize)
+                : GetColumnShipCells(startColumn, startRow, startRow + shipSize);
 
             if (!shipCells.Any(x => x.HasShip))
             {
@@ -76,15 +81,25 @@ public class Grid
         }
     }
 
+    public bool Shoot(int row, int column)
+    {
+        var cell = GetCell(row, column);
+        cell.IsShot = true;
+
+        return cell.HasShip;
+    }
+
+    public bool IsCleared() => _cells.Where(x => x.HasShip).All(x => x.IsShot);
+
     private Cell GetCell(int row, int column) => _cells.First(x => x.Row == row && x.Column == column);
 
-    private IList<Cell> GetRowCells(int row, int startIndex, int endIndex) => _cells
+    private IList<Cell> GetRowShipCells(int row, int startIndex, int shipSize) => _cells
         .Where(x => x.Row == row &&
-                    x.Column >= startIndex && x.Column < endIndex)
+                    x.Column >= startIndex && x.Column < shipSize)
         .ToList();
 
-    private IList<Cell> GetColumnCells(int column, int startIndex, int endIndex) => _cells
+    private IList<Cell> GetColumnShipCells(int column, int startIndex, int shipSize) => _cells
         .Where(x => x.Column == column &&
-                    x.Row >= startIndex && x.Row < endIndex)
+                    x.Row >= startIndex && x.Row < shipSize)
         .ToList();
 }
