@@ -2,12 +2,27 @@
 
 public class Ship
 {
-    public ShipType Type { get; init; }
-    public int Size => Type switch
+    public IList<Cell> Cells { get; }
+    
+    public Ship(ICollection<Cell> cells)
     {
-        ShipType.Destroyer => 4,
-        ShipType.Battleship => 5,
-        _ => throw new NotSupportedException(nameof(Type))
-    };
-    public IList<Cell>? Cells { get; set; }
+        if (Constants.ShipSizeByType.Values.All(x => x != cells.Count))
+        {
+            throw new ArgumentException("Invalid number of cells");
+        }
+
+        if (cells.Any(x => x.Ship is not null))
+        {
+            throw new ArgumentException("Some cells are already occupied");
+        }
+
+        Cells = cells.ToList();
+        foreach (var cell in Cells)
+        {
+            cell.PlaceShip(this);
+        }
+    }
+
+    public ShipType Type => Constants.ShipSizeByType.First(x => x.Value == Cells.Count).Key;
+    public bool HasSunk => Cells.All(x => x.IsShot);
 }

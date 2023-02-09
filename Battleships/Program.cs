@@ -6,12 +6,12 @@ grid.AddShip(ShipType.Destroyer);
 grid.AddShip(ShipType.Destroyer);
 grid.AddShip(ShipType.Battleship);
 
-Console.WriteLine("Welcome to Battleships!");
+Console.WriteLine("Welcome to Battleships!\n");
 
 var numberOfShots = 0;
 while (true)
 {
-    Console.WriteLine(grid.ToString());
+    Console.WriteLine(grid);
 
     Console.Write($"Shot #{numberOfShots + 1}. Enter shot location: ");
     var shotLocationInput = Console.ReadLine();
@@ -27,16 +27,16 @@ while (true)
 
         Console.WriteLine(GetShotResultDescription(shotResult));
 
-        if (grid.AreAllShipsDestroyed())
+        if (grid.HaveAllShipsSunk())
         {
-            Console.WriteLine($"All ships are destroyed in {numberOfShots} shots!");
-            Console.WriteLine(grid.ToString());
+            Console.WriteLine(grid);
+            Console.WriteLine($"All ships have sunk in {numberOfShots} shots!");
             break;
         }
     }
     else
     {
-        Console.WriteLine("Shot location is not valid.");
+        Console.WriteLine("Shot location is not valid. Accepted format: letter A-J (case insensitive) and number 1-10.\n");
     }
 }
 
